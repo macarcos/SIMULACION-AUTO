@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Seguridad Inteligente</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .connection-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.disconnected {
+            background: #ef4444;
+            animation: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .btn-connect {
+            background: rgba(255,255,255,0.3);
+            border: 2px solid white;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn-connect:hover {
+            background: white;
+            color: #667eea;
+            transform: translateY(-2px);
+        }
+        
+        .btn-connect:active {
+            transform: translateY(0);
+        }
+        
+        .content {
+            padding: 25px;
+        }
+        
+        .info-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            position: relative;
+        }
+        
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 16px;
+        }
+        
+        /* TOOLTIPS */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tooltip {
+            visibility: hidden;
+            background-color: #1e293b;
+            color: white;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+        
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .badge {
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .badge.auto {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge.manual {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge.on {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .badge.off {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge.detected {
+            background: #fef3c7;
+            color: #92400e;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .badge.clear {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        
+        /* ANIMACIÓN MOTOR EN MOVIMIENTO */
+        .motor-icon {
+            display: inline-block;
+            margin-left: 5px;
+            font-size: 16px;
+        }
+        
+        .motor-icon.spinning {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .controls {
+            display: grid;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        
+        .btn-on {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+        
+        .btn-on:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+        
+        .btn-off {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-off:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+        }
+        
+        .btn-auto {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+        
+        .btn-auto:hover:not(:disabled) {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        .console {
+            background: #1e293b;
+            color: #10b981;
+            border-radius: 12px;
+            padding: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+        
+        .console::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .console::-webkit-scrollbar-track {
+            background: #0f172a;
+            border-radius: 10px;
+        }
+        
+        .console::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+        }
+        
+        .console-line {
+            margin-bottom: 5px;
+        }
+        
+        .timestamp {
+            color: #64748b;
+            margin-right: 10px;
+        }
+        
+        .alert-section {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 20px;
+            display: none;
+            text-align: center;
+        }
+        
+        .alert-section.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .alert-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+            animation: bounce 1s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .alert-text {
+            color: #92400e;
+            font-weight: 700;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ Sistema de Seguridad</h1>
+            <p style="opacity: 0.9; font-size: 14px;">Control Inteligente con Sensor PIR</p>
+            <div class="connection-status">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="connectionText">Desconectado</span>
+            </div>
+            <button class="btn-connect" id="btnConnect" onclick="toggleConnection()">
+                🔗 CONECTAR ARDUINO
+            </button>
+        </div>
+        
+        <div class="content">
+            <!-- Estado del Sistema -->
+            <div class="info-card">
+                <div class="info-row">
+                    <span class="info-label">Modo Actual</span>
+                    <div class="tooltip-container">
+                        <span class="badge auto" id="modeStatus">AUTOMÁTICO</span>
+                        <span class="tooltip">Control basado en sensor PIR</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Estado del Motor</span>
+                    <div class="tooltip-container">
+                        <span class="badge off" id="motorStatus">
+                            APAGADO
+                            <span class="motor-icon" id="motorIcon">⚙️</span>
+                        </span>
+                        <span class="tooltip" id="motorTooltip">Motor detenido</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Sensor PIR</span>
+                    <div class="tooltip-container">
+                        <span class="badge clear" id="pirStatus">SIN MOVIMIENTO</span>
+                        <span class="tooltip" id="pirTooltip">No se detecta presencia</span>
+                    </div>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Tiempo Activo</span>
+                    <span class="info-value" id="uptime">0s</span>
+                </div>
+            </div>
+            
+            <!-- Alerta de Movimiento -->
+            <div class="alert-section" id="alertSection">
+                <div class="alert-icon">🚨</div>
+                <div class="alert-text">¡MOVIMIENTO DETECTADO!</div>
+                <p style="margin-top: 10px; color: #92400e;">Motor activado automáticamente</p>
+            </div>
+            
+            <!-- Controles -->
+            <div class="controls">
+                <button class="btn btn-on" id="btnOn" onclick="sendCommand('ON')" disabled>
+                    <span>✓</span> ENCENDER MOTOR
+                </button>
+                <button class="btn btn-off" id="btnOff" onclick="sendCommand('OFF')" disabled>
+                    <span>✕</span> APAGAR MOTOR
+                </button>
+                <button class="btn btn-auto" id="btnAuto" onclick="sendCommand('AUTO')" disabled>
+                    <span>🔄</span> MODO AUTOMÁTICO
+                </button>
+            </div>
+            
+            <!-- Consola de Comunicación -->
+            <div class="console" id="console">
+                <div class="console-line">
+                    <span class="timestamp">[--:--:--]</span>
+                    <span style="color: #fbbf24;">⚠️ Esperando conexión con Arduino...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let startTime = Date.now();
+        let autoMode = true;
+        let motorOn = false;
+        let pirDetected = false;
+        let isConnected = false;
+        let updateInterval = null;
+        
+        function toggleConnection() {
+            const btnConnect = document.getElementById('btnConnect');
+            const statusDot = document.getElementById('statusDot');
+            const connectionText = document.getElementById('connectionText');
+            
+            if (!isConnected) {
+                // CONECTAR
+                isConnected = true;
+                statusDot.classList.remove('disconnected');
+                connectionText.textContent = 'Arduino UNO conectado vía Bluetooth';
+                btnConnect.innerHTML = '🔌 DESCONECTAR ARDUINO';
+                btnConnect.style.background = 'rgba(239, 68, 68, 0.3)';
+                btnConnect.style.borderColor = '#ef4444';
+                
+                // Habilitar botones
+                document.getElementById('btnOn').disabled = false;
+                document.getElementById('btnOff').disabled = false;
+                document.getElementById('btnAuto').disabled = false;
+                
+                // Limpiar consola y agregar mensajes de conexión
+                document.getElementById('console').innerHTML = '';
+                addConsoleMessage('🔗 Iniciando conexión Bluetooth...');
+                setTimeout(() => addConsoleMessage('✓ Módulo HC-05 detectado'), 500);
+                setTimeout(() => addConsoleMessage('✓ Arduino UNO conectado correctamente'), 1000);
+                setTimeout(() => addConsoleMessage('✓ Sistema listo - Modo automático activado'), 1500);
+                
+                // Iniciar simulación
+                startTime = Date.now();
+                updateInterval = setInterval(simulateArduinoData, 1000);
+                
+            } else {
+                // DESCONECTAR
+                isConnected = false;
+                statusDot.classList.add('disconnected');
+                connectionText.textContent = 'Desconectado';
+                btnConnect.innerHTML = '🔗 CONECTAR ARDUINO';
+                btnConnect.style.background = 'rgba(255,255,255,0.3)';
+                btnConnect.style.borderColor = 'white';
+                
+                // Deshabilitar botones
+                document.getElementById('btnOn').disabled = true;
+                document.getElementById('btnOff').disabled = true;
+                document.getElementById('btnAuto').disabled = true;
+                
+                // Detener simulación
+                clearInterval(updateInterval);
+                
+                // Resetear estados
+                autoMode = true;
+                motorOn = false;
+                pirDetected = false;
+                document.getElementById('alertSection').classList.remove('show');
+                
+                addConsoleMessage('🔌 Desconectado del Arduino');
+                updateUI();
+            }
+        }
+        
+        // Simular recepción de datos del Arduino
+        function simulateArduinoData() {
+            if (!isConnected) return;
+            
+            // Actualizar tiempo activo
+            const uptime = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('uptime').textContent = uptime + 's';
+            
+            // Simular detección aleatoria de movimiento en modo auto
+            if (autoMode && Math.random() < 0.15) {
+                pirDetected = !pirDetected;
+                if (pirDetected) {
+                    motorOn = true;
+                    addConsoleMessage('🚨 ¡DETECCIÓN DE MOVIMIENTO!');
+                    addConsoleMessage('⚙️ Motor activado automáticamente');
+                    document.getElementById('alertSection').classList.add('show');
+                } else {
+                    motorOn = false;
+                    addConsoleMessage('✓ Área despejada - Sin movimiento');
+                    addConsoleMessage('⚙️ Motor detenido');
+                    document.getElementById('alertSection').classList.remove('show');
+                }
+            }
+            
+            updateUI();
+        }
+        
+        function updateUI() {
+            // Actualizar modo
+            const modeEl = document.getElementById('modeStatus');
+            if (autoMode) {
+                modeEl.textContent = 'AUTOMÁTICO';
+                modeEl.className = 'badge auto';
+            } else {
+                modeEl.textContent = 'MANUAL';
+                modeEl.className = 'badge manual';
+            }
+            
+            // Actualizar motor con animación
+            const motorEl = document.getElementById('motorStatus');
+            const motorIcon = document.getElementById('motorIcon');
+            const motorTooltip = document.getElementById('motorTooltip');
+            
+            if (motorOn) {
+                motorEl.innerHTML = 'EN MOVIMIENTO <span class="motor-icon spinning" id="motorIcon">⚙️</span>';
+                motorEl.className = 'badge on';
+                motorTooltip.textContent = 'Motor girando activamente';
+            } else {
+                motorEl.innerHTML = 'APAGADO <span class="motor-icon" id="motorIcon">⚙️</span>';
+                motorEl.className = 'badge off';
+                motorTooltip.textContent = 'Motor detenido';
+            }
+            
+            // Actualizar PIR con tooltip descriptivo
+            const pirEl = document.getElementById('pirStatus');
+            const pirTooltip = document.getElementById('pirTooltip');
+            
+            if (pirDetected) {
+                pirEl.textContent = '🔴 MOVIMIENTO DETECTADO';
+                pirEl.className = 'badge detected';
+                pirTooltip.textContent = '¡Presencia humana detectada!';
+            } else {
+                pirEl.textContent = '🟢 SIN MOVIMIENTO';
+                pirEl.className = 'badge clear';
+                pirTooltip.textContent = 'Área monitoreada - Sin actividad';
+            }
+        }
+        
+        function sendCommand(cmd) {
+            if (!isConnected) {
+                addConsoleMessage('❌ Error: Arduino no conectado');
+                return;
+            }
+            
+            addConsoleMessage(`📤 Comando enviado: ${cmd}`);
+            
+            switch(cmd) {
+                case 'ON':
+                    autoMode = false;
+                    motorOn = true;
+                    addConsoleMessage('✓ Motor encendido en MODO MANUAL');
+                    addConsoleMessage('⚙️ Motor en movimiento');
+                    document.getElementById('alertSection').classList.remove('show');
+                    break;
+                    
+                case 'OFF':
+                    autoMode = false;
+                    motorOn = false;
+                    addConsoleMessage('✓ Motor apagado en MODO MANUAL');
+                    addConsoleMessage('⚙️ Motor detenido');
+                    document.getElementById('alertSection').classList.remove('show');
+                    break;
+                    
+                case 'AUTO':
+                    autoMode = true;
+                    addConsoleMessage('✓ Modo AUTOMÁTICO activado');
+                    addConsoleMessage('🎯 Control transferido al sensor PIR');
+                    break;
+            }
+            
+            updateUI();
+        }
+        
+        function addConsoleMessage(message) {
+            const console = document.getElementById('console');
+            const time = new Date().toTimeString().split(' ')[0];
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.innerHTML = `<span class="timestamp">[${time}]</span><span>${message}</span>`;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        // Inicializar UI
+        updateUI();
+    </script>
+</body>
+</html>
